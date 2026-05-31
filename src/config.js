@@ -1,4 +1,6 @@
-// Cambia esto según donde corra tu backend.
-// En local: "http://localhost:4000"
-// En red local (otro celular): "http://IP_DE_TU_PC:4000" (ej "http://192.168.1.50:4000")
-export const API_URL = "http://localhost:4000";
+// URL del backend.
+// - En local: "http://localhost:4000"
+// - En producción (Vercel): se toma de la variable de entorno VITE_API_URL
+//   que configuras en el panel de Vercel.
+export const API_URL =
+  import.meta.env.VITE_API_URL || "http://localhost:4000";
