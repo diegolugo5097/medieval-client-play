@@ -21,6 +21,18 @@ export default function App() {
   const [loginError, setLoginError] = useState("");
   const isAdmin = !!token;
 
+  // ---- Playlists (admin) ----
+  const [playlistUrl, setPlaylistUrl] = useState("");
+  const [playlistName, setPlaylistName] = useState("");
+  const [savedPlaylists, setSavedPlaylists] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("cm_playlists") || "[]");
+    } catch {
+      return [];
+    }
+  });
+  const [loadingPlaylist, setLoadingPlaylist] = useState(false);
+
   // Conexión en tiempo real con el backend
   useEffect(() => {
     let alive = true;
@@ -149,6 +161,48 @@ export default function App() {
   const togglePause = () => adminAction("/api/toggle-pause");
   const borrar = (id) => adminAction(`/api/queue/${id}`, "DELETE");
 
+  /* ---- Playlists ---- */
+  function persistPlaylists(list) {
+    setSavedPlaylists(list);
+    localStorage.setItem("cm_playlists", JSON.stringify(list));
+  }
+
+  // Cargar una playlist (por URL) al backend → se añade a la cola de todos
+  async function cargarPlaylist(url) {
+    if (!url?.trim()) return;
+    setLoadingPlaylist(true);
+    try {
+      const r = await fetch(`${API_URL}/api/playlist`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-admin-token": token },
+        body: JSON.stringify({ url, addedBy: name || "Tabernero" }),
+      });
+      const d = await r.json();
+      if (r.ok) showToast(`Playlist cargada: ${d.added} canciones a la cola 🎶`);
+      else showToast(d.error || "No se pudo cargar la playlist.");
+    } catch {
+      showToast("No se pudo conectar para cargar la playlist.");
+    }
+    setLoadingPlaylist(false);
+  }
+
+  // Guardar la playlist actual en localStorage (para reproducir después)
+  function guardarPlaylist() {
+    if (!playlistUrl.trim()) return;
+    const nueva = {
+      id: Date.now().toString(36),
+      name: playlistName.trim() || "Playlist sin nombre",
+      url: playlistUrl.trim(),
+    };
+    persistPlaylists([nueva, ...savedPlaylists]);
+    setPlaylistName("");
+    showToast("Playlist guardada 📜");
+  }
+
+  function borrarPlaylistGuardada(id) {
+    persistPlaylists(savedPlaylists.filter((p) => p.id !== id));
+  }
+
   return (
     <div className="page">
       <div className="vignette" />
@@ -192,6 +246,59 @@ export default function App() {
             >
               ⏭ Saltar
             </button>
+          </div>
+
+          {/* Playlists */}
+          <div className="pl-section">
+            <div className="pl-title">🎶 Cargar playlist de YouTube</div>
+            <input
+              className="pl-input"
+              placeholder="Pega el link de la playlist…"
+              value={playlistUrl}
+              onChange={(e) => setPlaylistUrl(e.target.value)}
+            />
+            <div className="pl-row">
+              <input
+                className="pl-input pl-name"
+                placeholder="Nombre (para guardar)"
+                value={playlistName}
+                onChange={(e) => setPlaylistName(e.target.value)}
+              />
+              <button className="pl-save" onClick={guardarPlaylist} title="Guardar para después">
+                📜
+              </button>
+            </div>
+            <button
+              className="pl-load"
+              onClick={() => cargarPlaylist(playlistUrl)}
+              disabled={loadingPlaylist || !playlistUrl.trim()}
+            >
+              {loadingPlaylist ? "Cargando…" : "+ Añadir playlist a la cola"}
+            </button>
+
+            {savedPlaylists.length > 0 && (
+              <div className="pl-saved">
+                <div className="pl-saved-head">Guardadas</div>
+                {savedPlaylists.map((p) => (
+                  <div className="pl-saved-item" key={p.id}>
+                    <span className="pl-saved-name" title={p.url}>{p.name}</span>
+                    <button
+                      className="pl-saved-play"
+                      onClick={() => cargarPlaylist(p.url)}
+                      disabled={loadingPlaylist}
+                    >
+                      ▶
+                    </button>
+                    <button
+                      className="pl-saved-del"
+                      onClick={() => borrarPlaylistGuardada(p.id)}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}

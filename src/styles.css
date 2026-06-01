@@ -585,3 +585,104 @@ body {
   background: linear-gradient(180deg, var(--gold-bright), var(--gold));
   color: var(--wood-dark);
 }
+
+/* ====================== PLAYLISTS (admin) ====================== */
+.pl-section {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(201, 162, 39, 0.4);
+}
+.pl-title {
+  font-family: "Cinzel", serif;
+  font-size: 13px;
+  letter-spacing: 1px;
+  color: var(--gold-bright);
+  margin-bottom: 8px;
+}
+.pl-input {
+  width: 100%;
+  padding: 9px 11px;
+  margin-bottom: 8px;
+  font-family: "EB Garamond", serif;
+  font-size: 15px;
+  color: var(--ink);
+  background: #fff7e4;
+  border: 1px solid #9c7b3d;
+  border-radius: 5px;
+  outline: none;
+}
+.pl-input:focus { border-color: var(--gold); }
+.pl-row { display: flex; gap: 8px; }
+.pl-name { flex: 1; }
+.pl-save {
+  flex-shrink: 0;
+  width: 42px;
+  border: 1px solid var(--gold);
+  background: linear-gradient(180deg, #4a3018, var(--wood));
+  border-radius: 5px;
+  font-size: 17px;
+  cursor: pointer;
+}
+.pl-save:hover { filter: brightness(1.15); }
+.pl-load {
+  width: 100%;
+  margin-top: 4px;
+  font-family: "Cinzel", serif;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 11px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 1px solid var(--gold);
+  background: linear-gradient(180deg, var(--gold-bright), var(--gold));
+  color: var(--wood-dark);
+}
+.pl-load:disabled { opacity: 0.45; cursor: not-allowed; }
+.pl-load:hover:not(:disabled) { filter: brightness(1.08); }
+
+.pl-saved { margin-top: 12px; }
+.pl-saved-head {
+  font-family: "Cinzel", serif;
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--gold-bright);
+  opacity: 0.8;
+  margin-bottom: 6px;
+}
+.pl-saved-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 5px;
+}
+.pl-saved-name {
+  flex: 1;
+  min-width: 0;
+  color: #f0d9b0;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pl-saved-play,
+.pl-saved-del {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 5px;
+  cursor: pointer;
+  border: 1px solid var(--gold);
+  font-size: 12px;
+}
+.pl-saved-play {
+  background: linear-gradient(180deg, var(--gold-bright), var(--gold));
+  color: var(--wood-dark);
+}
+.pl-saved-play:disabled { opacity: 0.45; }
+.pl-saved-del {
+  background: transparent;
+  color: #d98a8a;
+  border-color: var(--wine);
+}
+.pl-saved-del:hover { background: var(--wine); color: #fff; }
