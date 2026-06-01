@@ -8,8 +8,10 @@ export default function App() {
   const [error, setError] = useState("");
   const [name, setName] = useState(() => localStorage.getItem("cm_name") || "");
   const [queue, setQueue] = useState([]);
+  const [queuePage, setQueuePage] = useState(0);
   const [nowPlaying, setNowPlaying] = useState(null);
   const [paused, setPaused] = useState(false);
+  const [volume, setVolume] = useState(70);
   const [toast, setToast] = useState("");
   const wsRef = useRef(null);
 
@@ -45,6 +47,7 @@ export default function App() {
           setQueue(data.queue || []);
           setNowPlaying(data.nowPlaying || null);
           setPaused(!!data.paused);
+          if (typeof data.volume === "number") setVolume(data.volume);
         }
       };
       ws.onclose = () => {
@@ -161,6 +164,24 @@ export default function App() {
   const togglePause = () => adminAction("/api/toggle-pause");
   const borrar = (id) => adminAction(`/api/queue/${id}`, "DELETE");
 
+  /* ---- Volumen ---- */
+  // Enviar el volumen al backend (con throttle simple)
+  const volTimerRef = useRef(null);
+  function enviarVolumen(v) {
+    if (volTimerRef.current) clearTimeout(volTimerRef.current);
+    volTimerRef.current = setTimeout(() => {
+      fetch(`${API_URL}/api/volume`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-admin-token": token },
+        body: JSON.stringify({ volume: v }),
+      }).catch(() => {});
+    }, 120);
+  }
+  function onVolumeChange(v) {
+    setVolume(v); // respuesta visual inmediata
+    enviarVolumen(v);
+  }
+
   /* ---- Playlists ---- */
   function persistPlaylists(list) {
     setSavedPlaylists(list);
@@ -246,6 +267,21 @@ export default function App() {
             >
               ⏭ Saltar
             </button>
+          </div>
+
+          {/* Control de volumen */}
+          <div className="vol-control">
+            <span className="vol-icon">{volume === 0 ? "🔇" : volume < 50 ? "🔉" : "🔊"}</span>
+            <input
+              type="range"
+              className="vol-slider"
+              min="0"
+              max="100"
+              value={volume}
+              style={{ "--fill": `${volume}%` }}
+              onChange={(e) => onVolumeChange(Number(e.target.value))}
+            />
+            <span className="vol-value">{volume}</span>
           </div>
 
           {/* Playlists */}
@@ -353,31 +389,60 @@ export default function App() {
           )}
         </div>
 
-        {queue.length > 0 && (
-          <section className="queue">
-            <h2 className="queue-title">En la cola del bardo · {queue.length}</h2>
-            <ol className="queue-list">
-              {queue.map((s, i) => (
-                <li key={s.id} className="queue-item">
-                  <span className="queue-num">{i + 1}</span>
-                  <div className="queue-info">
-                    <span className="queue-song">{s.title}</span>
-                    <span className="queue-by">pedida por {s.addedBy}</span>
-                  </div>
-                  {isAdmin && (
-                    <button
-                      className="queue-del"
-                      title="Borrar de la cola"
-                      onClick={() => borrar(s.id)}
-                    >
-                      ✕
-                    </button>
-                  )}
-                </li>
-              ))}
-            </ol>
-          </section>
-        )}
+        {queue.length > 0 && (() => {
+          const PER_PAGE = 10;
+          const totalPages = Math.ceil(queue.length / PER_PAGE);
+          const page = Math.min(queuePage, totalPages - 1);
+          const start = page * PER_PAGE;
+          const visibles = queue.slice(start, start + PER_PAGE);
+          return (
+            <section className="queue">
+              <h2 className="queue-title">En la cola del bardo · {queue.length}</h2>
+              <ol className="queue-list">
+                {visibles.map((s, i) => (
+                  <li key={s.id} className="queue-item">
+                    <span className="queue-num">{start + i + 1}</span>
+                    <div className="queue-info">
+                      <span className="queue-song">{s.title}</span>
+                      <span className="queue-by">pedida por {s.addedBy}</span>
+                    </div>
+                    {isAdmin && (
+                      <button
+                        className="queue-del"
+                        title="Borrar de la cola"
+                        onClick={() => borrar(s.id)}
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </li>
+                ))}
+              </ol>
+
+              {totalPages > 1 && (
+                <div className="pager">
+                  <button
+                    className="pager-btn"
+                    onClick={() => setQueuePage(Math.max(0, page - 1))}
+                    disabled={page === 0}
+                  >
+                    ‹ Anterior
+                  </button>
+                  <span className="pager-info">
+                    Página {page + 1} de {totalPages}
+                  </span>
+                  <button
+                    className="pager-btn"
+                    onClick={() => setQueuePage(Math.min(totalPages - 1, page + 1))}
+                    disabled={page >= totalPages - 1}
+                  >
+                    Siguiente ›
+                  </button>
+                </div>
+              )}
+            </section>
+          );
+        })()}
       </main>
 
       {/* Acceso / estado de tabernero al pie */}
