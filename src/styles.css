@@ -767,3 +767,12 @@ body {
   color: #6b4a1c;
   white-space: nowrap;
 }
+
+/* Pista de búsqueda reactiva */
+.search-hint {
+  margin-top: 8px;
+  font-style: italic;
+  font-size: 13px;
+  color: #7a5a28;
+  opacity: 0.8;
+}
