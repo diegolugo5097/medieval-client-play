@@ -776,3 +776,96 @@ body {
   color: #7a5a28;
   opacity: 0.8;
 }
+
+/* ====================== REORDENAR + LIMPIAR COLA ====================== */
+.queue-head-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.queue-clear {
+  flex-shrink: 0;
+  font-family: "Cinzel", serif;
+  font-size: 12px;
+  padding: 6px 11px;
+  border-radius: 5px;
+  cursor: pointer;
+  border: 1px solid var(--wine);
+  background: transparent;
+  color: var(--wine);
+  transition: background 0.1s;
+}
+.queue-clear:hover { background: var(--wine); color: #fff; }
+.queue-hint {
+  font-size: 12px;
+  font-style: italic;
+  color: #7a5a28;
+  margin: 2px 0 10px;
+}
+
+.queue-item.draggable {
+  cursor: grab;
+  user-select: none;
+  background: #fff7e4;
+  border: 1px solid #d8bf86;
+  border-radius: 6px;
+  padding: 7px 9px;
+  transition: box-shadow 0.15s, transform 0.05s;
+}
+.queue-item.draggable:active { cursor: grabbing; }
+.queue-item.dragging {
+  opacity: 0.5;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+}
+.drag-grip {
+  flex-shrink: 0;
+  color: #b07a2a;
+  font-size: 16px;
+  line-height: 1;
+  letter-spacing: -2px;
+  cursor: grab;
+}
+
+/* Modal de confirmación */
+.confirm-box {
+  width: 340px;
+  max-width: 100%;
+  background: linear-gradient(170deg, var(--parchment), var(--parchment-dark));
+  border: 2px solid var(--gold);
+  border-radius: 10px;
+  padding: 24px 22px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+}
+.confirm-icon { font-size: 34px; }
+.confirm-title {
+  font-family: "Cinzel Decorative", serif;
+  color: #4a2f10;
+  margin: 6px 0 10px;
+  font-size: 21px;
+}
+.confirm-text {
+  color: #5a3d1c;
+  font-size: 15px;
+  line-height: 1.4;
+  margin: 0 0 16px;
+}
+.confirm-actions { display: flex; gap: 8px; }
+.confirm-actions .btn-cancel,
+.confirm-actions .btn-danger {
+  flex: 1;
+  font-family: "Cinzel", serif;
+  font-weight: 600;
+  font-size: 15px;
+  padding: 11px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 1px solid var(--gold);
+}
+.btn-danger {
+  background: linear-gradient(180deg, #9b2a2a, var(--wine));
+  color: #fff;
+  border-color: var(--wine);
+}
+.btn-danger:hover { filter: brightness(1.1); }

@@ -164,6 +164,75 @@ export default function App() {
   const togglePause = () => adminAction("/api/toggle-pause");
   const borrar = (id) => adminAction(`/api/queue/${id}`, "DELETE");
 
+  // ---- Limpiar toda la cola (con confirmación) ----
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  function limpiarCola() {
+    adminAction("/api/clear");
+    setShowClearConfirm(false);
+    showToast("Cola vaciada");
+  }
+
+  // ---- Reordenar la cola (arrastrar y soltar) ----
+  // Orden local mientras se arrastra (para respuesta visual inmediata)
+  const [localOrder, setLocalOrder] = useState(null); // null = usar la cola del backend
+  const dragId = useRef(null);
+  const dragOverId = useRef(null);
+
+  // La lista que se muestra: si estamos arrastrando, el orden local; si no, la cola real
+  const displayQueue = localOrder || queue;
+
+  function enviarOrden(items) {
+    fetch(`${API_URL}/api/reorder`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-admin-token": token },
+      body: JSON.stringify({ order: items.map((s) => s.id) }),
+    }).catch(() => {});
+  }
+
+  function onDragStart(id) {
+    dragId.current = id;
+    setLocalOrder([...queue]);
+  }
+  function onDragEnter(id) {
+    dragOverId.current = id;
+    if (!localOrder || dragId.current === id) return;
+    const items = [...localOrder];
+    const from = items.findIndex((s) => s.id === dragId.current);
+    const to = items.findIndex((s) => s.id === id);
+    if (from === -1 || to === -1) return;
+    const [moved] = items.splice(from, 1);
+    items.splice(to, 0, moved);
+    setLocalOrder(items);
+  }
+  function onDragEnd() {
+    if (localOrder) {
+      enviarOrden(localOrder);
+      showToast("Cola reordenada");
+    }
+    dragId.current = null;
+    dragOverId.current = null;
+    setLocalOrder(null);
+  }
+
+  // --- Soporte táctil (móvil): mover con el dedo ---
+  function onTouchStart(id) {
+    dragId.current = id;
+    setLocalOrder([...queue]);
+  }
+  function onTouchMove(e) {
+    if (!dragId.current) return;
+    const t = e.touches[0];
+    const el = document.elementFromPoint(t.clientX, t.clientY);
+    const li = el?.closest("[data-qid]");
+    if (li) {
+      const overId = li.getAttribute("data-qid");
+      if (overId && overId !== dragId.current) onDragEnter(overId);
+    }
+  }
+  function onTouchEnd() {
+    onDragEnd();
+  }
+
   /* ---- Volumen ---- */
   // Enviar el volumen al backend (con throttle simple)
   const volTimerRef = useRef(null);
@@ -389,7 +458,54 @@ export default function App() {
           )}
         </div>
 
-        {queue.length > 0 && (() => {
+        {queue.length > 0 && isAdmin && (
+          <section className="queue">
+            <div className="queue-head-row">
+              <h2 className="queue-title">En la cola del bardo · {queue.length}</h2>
+              <button className="queue-clear" onClick={() => setShowClearConfirm(true)}>
+                🗑 Vaciar
+              </button>
+            </div>
+            <p className="queue-hint">Arrastra para reordenar ✥</p>
+            <ol className="queue-list">
+              {displayQueue.map((s, i) => (
+                <li
+                  key={s.id}
+                  data-qid={s.id}
+                  className={`queue-item draggable ${dragId.current === s.id ? "dragging" : ""}`}
+                  draggable
+                  onDragStart={() => onDragStart(s.id)}
+                  onDragEnter={() => onDragEnter(s.id)}
+                  onDragEnd={onDragEnd}
+                  onDragOver={(e) => e.preventDefault()}
+                >
+                  <span
+                    className="drag-grip"
+                    title="Arrastrar"
+                    onTouchStart={() => onTouchStart(s.id)}
+                    onTouchMove={onTouchMove}
+                    onTouchEnd={onTouchEnd}
+                    style={{ touchAction: "none" }}
+                  >⋮⋮</span>
+                  <span className="queue-num">{i + 1}</span>
+                  <div className="queue-info">
+                    <span className="queue-song">{s.title}</span>
+                    <span className="queue-by">pedida por {s.addedBy}</span>
+                  </div>
+                  <button
+                    className="queue-del"
+                    title="Borrar de la cola"
+                    onClick={() => borrar(s.id)}
+                  >
+                    ✕
+                  </button>
+                </li>
+              ))}
+            </ol>
+          </section>
+        )}
+
+        {queue.length > 0 && !isAdmin && (() => {
           const PER_PAGE = 10;
           const totalPages = Math.ceil(queue.length / PER_PAGE);
           const page = Math.min(queuePage, totalPages - 1);
@@ -406,15 +522,6 @@ export default function App() {
                       <span className="queue-song">{s.title}</span>
                       <span className="queue-by">pedida por {s.addedBy}</span>
                     </div>
-                    {isAdmin && (
-                      <button
-                        className="queue-del"
-                        title="Borrar de la cola"
-                        onClick={() => borrar(s.id)}
-                      >
-                        ✕
-                      </button>
-                    )}
                   </li>
                 ))}
               </ol>
@@ -453,6 +560,28 @@ export default function App() {
       )}
 
       {toast && <div className="toast">{toast}</div>}
+
+      {/* Confirmación de vaciar cola */}
+      {showClearConfirm && (
+        <div className="login-overlay" onClick={() => setShowClearConfirm(false)}>
+          <div className="confirm-box" onClick={(e) => e.stopPropagation()}>
+            <div className="confirm-icon">🗑</div>
+            <h2 className="confirm-title">¿Vaciar toda la cola?</h2>
+            <p className="confirm-text">
+              Se quitarán las {queue.length} canciones en espera. La que está
+              sonando no se ve afectada. Esta acción no se puede deshacer.
+            </p>
+            <div className="confirm-actions">
+              <button className="btn-cancel" onClick={() => setShowClearConfirm(false)}>
+                Cancelar
+              </button>
+              <button className="btn-danger" onClick={limpiarCola}>
+                Sí, vaciar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <footer className="foot">⚔ Café Medieval · Taberna del Trovador ⚔</footer>
 
