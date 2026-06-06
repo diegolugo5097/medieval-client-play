@@ -12,6 +12,7 @@ export default function App() {
   const [nowPlaying, setNowPlaying] = useState(null);
   const [paused, setPaused] = useState(false);
   const [volume, setVolume] = useState(70);
+  const [songVolumes, setSongVolumes] = useState({});
   const [toast, setToast] = useState("");
   const wsRef = useRef(null);
 
@@ -48,6 +49,7 @@ export default function App() {
           setNowPlaying(data.nowPlaying || null);
           setPaused(!!data.paused);
           if (typeof data.volume === "number") setVolume(data.volume);
+          if (data.songVolumes) setSongVolumes(data.songVolumes);
         }
       };
       ws.onclose = () => {
@@ -251,6 +253,29 @@ export default function App() {
     enviarVolumen(v);
   }
 
+  /* ---- Volumen de la canción que suena ---- */
+  const songVolTimerRef = useRef(null);
+  // Valor a mostrar: el ajuste propio de la canción, o 70 (neutro) si no tiene
+  function currentSongVol() {
+    const vid = nowPlaying?.videoId;
+    if (vid && typeof songVolumes[vid] === "number") return songVolumes[vid];
+    return 70;
+  }
+  function onSongVolumeChange(v) {
+    const vid = nowPlaying?.videoId;
+    if (!vid) return;
+    // Respuesta visual inmediata (actualizo el mapa local)
+    setSongVolumes((prev) => ({ ...prev, [vid]: v }));
+    if (songVolTimerRef.current) clearTimeout(songVolTimerRef.current);
+    songVolTimerRef.current = setTimeout(() => {
+      fetch(`${API_URL}/api/song-volume`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-admin-token": token },
+        body: JSON.stringify({ videoId: vid, volume: v }),
+      }).catch(() => {});
+    }, 150);
+  }
+
   /* ---- Playlists ---- */
   function persistPlaylists(list) {
     setSavedPlaylists(list);
@@ -338,7 +363,7 @@ export default function App() {
             </button>
           </div>
 
-          {/* Control de volumen */}
+          {/* Control de volumen general */}
           <div className="vol-control">
             <span className="vol-icon">{volume === 0 ? "🔇" : volume < 50 ? "🔉" : "🔊"}</span>
             <input
@@ -352,6 +377,33 @@ export default function App() {
             />
             <span className="vol-value">{volume}</span>
           </div>
+
+          {/* Volumen específico de la canción que suena */}
+          {nowPlaying && (
+            <div className="song-vol">
+              <div className="song-vol-label">
+                🎚 Volumen de esta canción
+                {currentSongVol() !== 70 && <span className="song-vol-badge">ajustado</span>}
+              </div>
+              <div className="vol-control">
+                <span className="vol-icon">🎵</span>
+                <input
+                  type="range"
+                  className="vol-slider"
+                  min="0"
+                  max="100"
+                  value={currentSongVol()}
+                  style={{ "--fill": `${currentSongVol()}%` }}
+                  onChange={(e) => onSongVolumeChange(Number(e.target.value))}
+                />
+                <span className="vol-value">{currentSongVol()}</span>
+              </div>
+              <p className="song-vol-hint">
+                Si esta canción suena bajita, súbela aquí. El ajuste se guarda y se
+                aplica cada vez que suene, para todos los taberneros. (70 = normal)
+              </p>
+            </div>
+          )}
 
           {/* Playlists */}
           <div className="pl-section">

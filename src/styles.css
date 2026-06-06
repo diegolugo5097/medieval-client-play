@@ -869,3 +869,39 @@ body {
   border-color: var(--wine);
 }
 .btn-danger:hover { filter: brightness(1.1); }
+
+/* ====================== VOLUMEN POR CANCIÓN ====================== */
+.song-vol {
+  margin-top: 10px;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(201, 162, 39, 0.35);
+  border-radius: 6px;
+}
+.song-vol-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: "Cinzel", serif;
+  font-size: 12px;
+  letter-spacing: 1px;
+  color: var(--gold-bright);
+  margin-bottom: 8px;
+}
+.song-vol-badge {
+  font-family: "EB Garamond", serif;
+  font-size: 11px;
+  letter-spacing: 0;
+  text-transform: lowercase;
+  background: var(--gold);
+  color: var(--wood-dark);
+  border-radius: 10px;
+  padding: 1px 8px;
+}
+.song-vol-hint {
+  font-size: 11px;
+  font-style: italic;
+  color: #c8a86a;
+  margin: 8px 0 0;
+  line-height: 1.35;
+}
